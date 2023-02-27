@@ -34,21 +34,19 @@ while True:
     frame = cv2.imread(frame_path)
     try:
         t2=time.time()
-        save,show=(True,False)
-        vest_obj,frame = vest.detect_track(frame, save, show)
-        save_show(frame, i, save, show)
+        save,show=(False,True)
+        vest_obj,img = vest.detect_track(frame, save, show)
+        # save_show(img, i, save, show)
         t3=time.time()
-        save,show=(True,False)
-        obs_obj,frame = yolo.detect_track(frame, save, show)
-        save_show(frame, i, save, show)
+        # save,show=(False,False)
+        obs_obj,img = yolo.detect_track(frame, save, show)
+        # save_show(img, i, save, show)
         t4=time.time()
         depth = dpt.inference_depth(frame_path, save=True, show=False)
         t5=time.time()
-        save,show=(False,False)
-        # if i%2==0:
-        #     continue
-        segment_obj,frame = pos.panoptic_pred(frame, 21, save, show)
-        save_show(frame, i, save, show)
+        # save,show=(False,False)
+        segment_obj,img = pos.panoptic_pred(frame, 21, save, show)
+        save_show(img, i, save, show)
         t6=time.time()
         i += 1
     except Exception as e:

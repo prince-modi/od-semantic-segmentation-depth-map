@@ -12,7 +12,6 @@ from ultralytics import YOLO
 from typing import List
 import numpy as np
 import cv2 as cv
-import time
 
 @dataclass(frozen=True)
 class BYTETrackerArgs:
