@@ -114,14 +114,3 @@ class DetectTrack:
             return results, self.frame
         else:
             return results, None
-
-
-
-    
-if __name__=="__main__":
-    obj = DetectTrack("yolo")
-    i = 0
-    while True:
-        frame = cv.imread(f"frames/{i}.jpg")
-        obj.detect_track(frame, i)
-        i += 1
