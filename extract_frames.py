@@ -11,12 +11,11 @@ SAVING_FRAMES_PER_SECOND = 10
 
 
 
-def main(video_file, extraction=False):
+def main(video_file, filename, extraction=False):
     # load the video clip
     video_clip = VideoFileClip(video_file)
     # make a folder by the name of the video file
     filename, _ = os.path.splitext(video_file) #not needed as of now
-    filename = "output"
 
     if extraction == True:
         if os.path.isdir(filename):
@@ -66,7 +65,7 @@ def display(video_folder="output"):
     cv.destroyAllWindows()
     print('done')
 
-def fetch_frame(itr=None, input="output"):
+def fetch_frame(itr=None, input="frames"):
     input_path = f"{input}/{itr}.jpg"
     return cv.imread(input_path)
 
@@ -74,16 +73,16 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--source', default='sample_videos/footpath_edited.mp4',
                         help='video chalane ke liye')
-    parser.add_argument('--display', default='True',
+    parser.add_argument('--display', default='False',
                         help='show frames')
-    parser.add_argument('--output', default='output',
+    parser.add_argument('--output', default='extracted',
                         help='output folder for extracted frames')
     args = parser.parse_args()
                         
     video_file = args.source
     video_folder = args.output
     try: 
-        video_folder = main(video_file, True)
+        video_folder = main(video_file, video_folder, True)
     except KeyboardInterrupt as e:
         pass
     print(video_folder)
