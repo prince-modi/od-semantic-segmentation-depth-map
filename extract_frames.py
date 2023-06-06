@@ -15,7 +15,7 @@ def main(video_file, filename, extraction=False):
     # load the video clip
     video_clip = VideoFileClip(video_file)
     # make a folder by the name of the video file
-    filename, _ = os.path.splitext(video_file) #not needed as of now
+    # filename, _ = os.path.splitext(video_file) #not needed as of now
 
     if extraction == True:
         if os.path.isdir(filename):
@@ -46,6 +46,7 @@ def main(video_file, filename, extraction=False):
 
 
 def display(video_folder="output"):
+    print('entered display!!')
     i = 0
     while True:
         input_path = f"{video_folder}/{i}.jpg"
@@ -71,20 +72,21 @@ def fetch_frame(itr=None, input="frames"):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--source', default='sample_videos/footpath_edited.mp4',
+    parser.add_argument('--source', default='finale2/IROS_video_submission_samples/sarvam.mp4',
                         help='video chalane ke liye')
     parser.add_argument('--display', default='False',
                         help='show frames')
-    parser.add_argument('--output', default='extracted',
+    parser.add_argument('--output', default='finale2/extracted/sarvam',
                         help='output folder for extracted frames')
     args = parser.parse_args()
                         
     video_file = args.source
     video_folder = args.output
+    print(f'source: {video_file}, output:{video_folder}, display:{args.display}')
     try: 
         video_folder = main(video_file, video_folder, True)
     except KeyboardInterrupt as e:
         pass
     print(video_folder)
-    if args.display:
+    if (args.display)==True:
         display(video_folder)

@@ -30,41 +30,38 @@ def depthwrapper():
         while True:
             t0 = time.time()
             frame_path=f"finale/{i}.jpg"
-            frame_path=f"/home/sumanraj/IROS_official/finale2/extracted/tomess1/{i}.jpg"
             frame = cv2.imread(frame_path)
             frame = cv2.resize(frame, (960,720), interpolation=cv2.INTER_AREA)
-            mask = pss.panoptic_pred_3(frame=frame)
-            # mask = pss.panoptic_pred_2(frame=frame,id1=21,id2=21)
-            mask=mask[0]
+            mask = pss.panoptic_pred(frame=frame,id=0)
+            mask=mask[0].cpu().numpy()
             # print(mask[0].cpu().numpy().shape)
             depth = dpt.inference_depth(frame_path, save=False, show=False, send_depth=False)
             # print(depth.shape)
             ## need to change some things
             xyxy = [0,0,320,720]
-            depth[mask!=0]=255 ##depth map output
+            depth[mask!=0]=0
             # print(depth)
             
-            # free = {}
-            # for j in range(3):
-            #     median,mean,test=depth_pixels_bbox(xyxy,depth)
-            #     free[j]=mean
-            #     xyxy[0]+=320
-            #     xyxy[2]+=320
+            free = {}
+            for j in range(3):
+                median,mean,test=depth_pixels_bbox(xyxy,depth)
+                free[j]=mean
+                xyxy[0]+=320
+                xyxy[2]+=320
             i+=1
-            # maxy=min(free, key=free.get)
-            # print("Free space",maxy,free[maxy])
+            maxy=min(free, key=free.get)
+            print("Free space",maxy,free[maxy])
             # if maxy==0:
-            #     depth = cv2.rectangle(frame, (10,10), (330,710), (255, 0, 0), thickness=3)
+            #     depth = cv2.rectangle(frame, (0,0), (320,720), (255, 0, 0), thickness=3)
             # elif maxy==1:
-            #     depth = cv2.rectangle(frame, (310,10), (650,710), (255, 0, 0), thickness=3)
+            #     depth = cv2.rectangle(frame, (320,0), (640,720), (255, 0, 0), thickness=3)
             # elif maxy==2:
-            #     depth = cv2.rectangle(frame, (650,0), (950,710), (255, 0, 0), thickness=3)
+            #     depth = cv2.rectangle(frame, (640,0), (960,720), (255, 0, 0), thickness=3)
             cv2.imshow('depth', depth)
-            cv2.imwrite(f"/home/sumanraj/IROS_official/finale2/partition/tomess1/without_mask/{i}.png", depth)
+            cv2.imwrite(f"finale/depth_black_masks/{i}_maskless.png",depth)
             cv2.waitKey(1)
     except Exception as e:
         print(e)
-    # return free
         
 
 def depth_pixels_bbox(xyxy=None, depth=None, csv=False, median=True, mean=True):
@@ -91,55 +88,36 @@ def depth_pixels_bbox(xyxy=None, depth=None, csv=False, median=True, mean=True):
      
 
 def vip_vest_inter(vest_obj, obs_obj):
-    obs_detections = [obs_obj[0].boxes.xyxy.cpu().numpy(), obs_obj[0].boxes.conf.cpu().numpy(), obs_obj[0].boxes.cls.cpu().numpy().astype(int)] #boxes,conf,id
-    vest_bbox = vest_obj[0].boxes.xyxy.cpu().numpy().squeeze()
-    # print(len(vest_bbox), len(obs_detections[0]))
-
-    if vest_bbox.shape==(4,):
-        print(vest_bbox.shape)
+    if len(vest_obj) != 0:
+        obs_detections = [obs_obj[0].boxes.xyxy.cpu().numpy(), obs_obj[0].boxes.conf.cpu().numpy(), obs_obj[0].boxes.cls.cpu().numpy().astype(int)] #boxes,conf,id
+        vest_bbox = vest_obj[0].boxes.xyxy.cpu().numpy().squeeze()
+        print(len(vest_bbox), len(obs_detections[0]))
+    
+        # print("chalna bhai")
         vest_bbox = [int(i) for i in vest_bbox]
+        # print("chalna bhai pls")
+
+        # point of interest vest_bbox[0],vest_bbox[2]
         for j,box in enumerate(obs_detections[0]):
-            print(len(vest_bbox), "Length")
-            xtop = [i for i in range(vest_bbox[0]-60,vest_bbox[0]+60)]
-            xbot = [i for i in range(vest_bbox[2]-60,vest_bbox[2]+60)]
+            print("chalna bhai ESA KYA KARA")
+            xtop = [i for i in range(vest_bbox[0]-10,vest_bbox[0]+10)]
+            xbot = [i for i in range(vest_bbox[2]-10,vest_bbox[2]+10)]
             box = [int(i) for i in box]
-            
+            fail_box = box
+            print(xtop,xbot,box)
             if box[0] in xtop and box[2] in xbot:
                 if box[1] < vest_bbox[1] and box[3] > vest_bbox[3]:
                     print('returning logical output')
+                    fail_box=box
                     return box
+                else:
+                    return fail_box
+            if j == len(obs_detections[0])-1:
+                return [0,0,0,0]  
+            
     else:
-        return [0,0,960,720]
-
-def vip_close_to_edge(vip_bbox, mask, frame):
-    mask=mask.astype(np.uint8)
-    mask[mask!=0]=255
-    # print(mask.shape)
-    ## check road on left
-    try:
-        left = mask[vip_bbox[3]-90:vip_bbox[3], vip_bbox[0]-90:vip_bbox[0]]
-        left_dist = np.average(left)
-    except Exception as exception:
-        print(exception)
-        print("person on left edge")
-    ## check road on right
-    try:
-        right = mask[vip_bbox[3]-90:vip_bbox[3], vip_bbox[2]:vip_bbox[2]+90]
-        # print(right)
-        right_dist = np.average(right)  
-    except Exception as exception:
-        print(exception)
-        print("person on right edge")
-
-    # if left_dist < 170 and right_dist < 170:
-    #     cv2.putText(frame, "Narrow path. Walk carefully!", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0),1, cv2.LINE_AA)
-    if left_dist < 170:
-        cv2.putText(frame, "Close to edge move right", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
-    elif right_dist < 170: 
-        cv2.putText(frame, "Close to edge move left", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA) 
-         
-    # cv2.imshow("right",right)
-    # cv2.waitKey(1000)
+        print('kuch toh gadbad kia')
+        return [0,0,480,360]
 
 
 def write_results(frame, frame_path, model,dpt_model):
@@ -225,6 +203,9 @@ def calculate_depth(vest_obj, obs_obj, vest_label, obs_labels, dist, depth):
         boxes = obj[0].boxes.xyxy.cpu().numpy().tolist()  
         conf = obj[0].boxes.conf.cpu().numpy().tolist() 
         cls_id = obj[0].boxes.cls.cpu().numpy().astype(int).tolist()  
+        # boxes = obs_obj[0].boxes.xyxy.cpu().numpy().tolist() + vest_obj[0].boxes.xyxy.cpu().numpy().tolist()
+        # conf = obs_obj[0].boxes.conf.cpu().numpy().tolist() + vest_obj[0].boxes.conf.cpu().numpy().tolist()
+        # cls_id = obs_obj[0].boxes.cls.cpu().numpy().astype(int).tolist() + vest_obj[0].boxes.cls.cpu().numpy().astype(int).tolist()
         depth_arr = []
         dist_arr = []
         if i==0:
@@ -248,8 +229,8 @@ def calculate_depth(vest_obj, obs_obj, vest_label, obs_labels, dist, depth):
         detections.append(dist_arr)
         track_results.append(detections)
 
-    # print('vest_results: ', track_results[0])
-    # print('obs_results: ', track_results[1])
+    print('vest_results: ', track_results[0])
+    print('obs_results: ', track_results[1])
     return track_results
 
 
@@ -275,42 +256,14 @@ def box_annotator(frame, vest_detections, obs_detections, yolo_classes_id_dict, 
             labels2[i] = x + str(track_results[1][-1][i])
         frame = box_annotator.annotate(frame=frame, detections=obs_detections, labels=labels2)
 
-
-def track_vip(obs_detections, track_results, vest_results, obs_results, vip_bbox, vip_tracker_id):
-    labels = obs_detections.tracker_id.tolist()
-    obs_boxes = track_results[1][0]
-
-    if vip_tracker_id in labels:
-        vip_box_index = labels.index(vip_tracker_id)
-        vip_bbox = obs_boxes[vip_box_index]
-        vip_bbox = [int(i) for i in vip_bbox]
-    if vip_tracker_id not in labels: #track_results[1][3] = [2,4,5,6] -> list of ids of obs_labels
-        vip_bbox = vip_vest_inter(vest_results, obs_results)
-        print("vip_bbox: ", vip_bbox)
-        print("obs_boxes: ", obs_boxes)
-        #updating id
-        if vip_bbox != [0,0,960,720] and vip_bbox != None: 
-            vip_box_index = obs_boxes.index(vip_bbox)
-            labels = obs_detections.tracker_id
-            vip_tracker_id = labels[vip_box_index]
-    return vip_bbox, vip_tracker_id
-
-
-def classify_obs_by_dist(frame, track_results, vip_bbox, threshold=6):
+def classify_obs_by_dist(frame, track_results, threshold=6):
     bboxes, dist = track_results[1][0], track_results[1][-1]
-    if vip_bbox in bboxes:
-        print(f'len of bboxes: {len(bboxes)}, dist of bboxes: {len(bboxes)}')
-        vip_box_index = bboxes.index(vip_bbox)
-        dist.remove(dist[vip_box_index])
-        bboxes.remove(vip_bbox)
     red_bbox = []
     for i,j in zip(bboxes, dist):
         if j<threshold:
-            print([i,j])
             red_bbox.append([i,j])
-            cv2.rectangle(frame, (int(i[0]),int(i[1])), (int(i[2]),int(i[3])), (0, 0, 255), thickness=9)
-    # print(red_bbox)
-    return red_bbox
+            cv2.rectangle(frame, tuple(red_bbox[0:2]), tuple(red_bbox[2:4]), (0, 255, 0), thickness=3)
+    return
 
 
 def plot_abs_rev(df, rev_median_arr, rev_mean_arr, abs_arr, mode="log"):
@@ -480,7 +433,7 @@ def abs_csv(show=False, real_inf=False, mode="poly"): #mode=log, poly
      
 
 if __name__=="__main__":
-    # abs_csv(show=True, real_inf=True, mode="poly")
+    abs_csv(show=True, real_inf=True, mode="poly")
 
     # if 0:
     #     model = load(open('median_dpt.pkl', 'rb'))
@@ -489,7 +442,7 @@ if __name__=="__main__":
     #     plt.plot(x_seq,y,color="black")
     #     plt.show()
 
-    depthwrapper()
+    # depthwrapper()
 
 
 

@@ -154,7 +154,7 @@ class Detect_track:
         
         # format custom labels
         self.labels=[]
-        print(detections.tracker_id)
+        print('detections.tracker_id:', detections.tracker_id)
 
         if len(detections.tracker_id) != 0:
             self.labels = [

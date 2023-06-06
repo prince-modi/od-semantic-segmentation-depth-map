@@ -30,16 +30,24 @@ os.makedirs("mask_plots")
 try:
     i = 0
     inf_row = []
-    while i<650:
+    while True:
         print(i)
         t0 = time.time()
-        frame = cv2.imread(f"demo/{i}.jpg")
+        frame = cv2.imread(f"/home/sumanraj/IROS_official/finale2/extracted/ashwini2/{i}.jpg")
         print("read image")
         frame = cv2.resize(frame, (960,720), interpolation=cv2.INTER_AREA)
         t1=time.time()
         outputs, segments_info = predictor(frame)["panoptic_seg"]
         print(1)
         res=time.time()
+        # outputs1=outputs.clone().detach()
+        # try:
+        #     mask = [i['id'] for i in segments_info if i['isthing']==True]
+        #     temp = np.isin(outputs1.to("cpu"), mask)
+        #     outputs[temp==0]=0
+        # except Exception as ee:
+        #     print("exception",ee)
+
         try:
             print("tryyy")
             segs = [i['id'] for i in segments_info if 'category_id' in i and i['category_id']==21]# or i['category_id']==44)]
@@ -48,16 +56,17 @@ try:
             print(len(segs2))
         except Exception as ee:
             continue
-        # finally:
-        #     i+=1
+        finally:
+            i+=1
         outputs1=outputs.clone().detach()
         outputs2=outputs.clone().detach()
         # t2=time.time()
         # try:
         #     mask = [i['id'] for i in segments_info if i['isthing']==True]
-        #     outputs = out
-        # # a = a[~np.isin(a, elements_to_remove)]
+        #     temp = np.isin(outputs1.to("cpu"), mask)
+        #     outputs[temp==0]=0
         # except Exception as ee:
+        #     print("exception",ee)
         #     continue
         
         # print(mask)
@@ -72,7 +81,6 @@ try:
         if len(segs2) and not len(segs):
             finaloutput=outputs2
         finaloutput=outputs1+outputs2
-        # finaloutput=outputs2
 
         # with open('output.txt','w') as f:
         #     f.write(str(segments_info))
@@ -80,20 +88,20 @@ try:
             out = v.draw_panoptic_seg_predictions(finaloutput.to("cpu"), segments_info)
             t3 = time.time()
             frame = out.get_image()[:, :, ::-1]
-            cv2.imshow("frame", frame)
-            cv2.waitKey(1)
-            cv2.imwrite(f'finale/sem_seg_lane/{i}.jpg', frame) 
+            # cv2.imshow("frame", frame)
+            # cv2.waitKey(1)
+            cv2.imwrite(f'/home/sumanraj/IROS_official/finale2/edge/car/segmentation_road/{i}.jpg', frame) 
         except Exception as pe:
             print(pe)
             continue
         i=i+1
         # print(f'loop: {time.time()-t0}, preprocessing: {t1-t0}, inferencing: {t2-t1}, overhead: {t3-t2}')
         inf_row.append(res-t1)
-    with open('panoptic.csv', 'a', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(["SNo", "Time"])
-        for i ,row in enumerate(inf_row):
-            writer.writerow([i,row])
+    # with open('panoptic.csv', 'a', newline='') as file:
+    #     writer = csv.writer(file)
+    #     writer.writerow(["SNo", "Time"])
+    #     for i ,row in enumerate(inf_row):
+    #         writer.writerow([i,row])
 except Exception as e:
     print(e)
 
